@@ -38,9 +38,9 @@ def manual_recording():
         current_time = time.time()
         recording_time = current_time-start_time
     'once out of loop generate all csv,png and wav'
+    wav()
     csv()
     png()
-    wav()
     print('\n')
     main()
     
@@ -54,9 +54,9 @@ def ultrasonic_recording():
             'once distance >10 for specific amount of time generate all csv,png and wav'
         except KeyboardInterrupt:
             print('')
+            wav()
             csv()
             png()
-            wav()
             print('\n')
             main()
 
