@@ -31,11 +31,12 @@ def manual_recording():
     recording_time = 0
 
     while (recording_time<record_duration):
-        current_time = time.time()
-        recording_time = current_time-start_time
+        
         'receive transmission'
         print("receiving")
         time.sleep(1)
+        current_time = time.time()
+        recording_time = current_time-start_time
     'once out of loop generate all csv,png and wav'
 
 def ultrasonic_recording():
