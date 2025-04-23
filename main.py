@@ -1,6 +1,11 @@
 'import read_serial'
 import time
 import math
+import wave
+import numpy as np
+import matplotlib.pyplot as plt
+import csv as csv_module  # Avoid naming conflict with csv()
+
 def main():
     choice = -1
     print("Main Menu")
@@ -66,7 +71,33 @@ def csv():
     print("CSV generated")
 
 def png():
-    'generate png'
+    wav_file = 'test.wav'
+    with wave.open(wav_file, 'rb') as wf:
+        n_frames = wf.getnframes()
+        framerate = wf.getframerate()
+        signal = wf.readframes(n_frames)
+        num_channels = wf.getnchannels()
+        sample_width = wf.getsampwidth()
+
+        if sample_width == 2:
+            data = np.frombuffer(signal, dtype=np.int16)
+        else:
+            raise ValueError("Unsupported sample width")
+
+        if num_channels == 2:
+            data = data[::2]  # Use one channel if stereo
+
+        time_axis = np.linspace(0, len(data) / framerate, num=len(data))
+
+        plt.figure(figsize=(10, 4))
+        plt.plot(time_axis, data)
+        plt.title('Waveform')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Amplitude')
+        plt.tight_layout()
+        plt.savefig('waveform.png')
+        plt.close()
+
     print("PNG generated")
 
 def wav():
