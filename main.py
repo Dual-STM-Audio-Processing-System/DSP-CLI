@@ -67,7 +67,30 @@ def ultrasonic_recording():
 
         
 def csv():
-    'generate csv'
+    wav_file = 'test.wav'
+    with wave.open(wav_file, 'rb') as wf:
+        n_frames = wf.getnframes()
+        framerate = wf.getframerate()
+        signal = wf.readframes(n_frames)
+        num_channels = wf.getnchannels()
+        sample_width = wf.getsampwidth()
+        
+        if sample_width == 2:
+            data = np.frombuffer(signal, dtype=np.int16)
+        else:
+            raise ValueError("Unsupported sample width")
+
+        if num_channels == 2:
+            data = data[::2]  # Use one channel if stereo
+
+        time_axis = np.linspace(0, len(data) / framerate, num=len(data))
+
+        with open('output.csv', 'w', newline='') as file:
+            writer = csv_module.writer(file)
+            writer.writerow(['Time (s)', 'Amplitude'])
+            for t, amp in zip(time_axis, data):
+                writer.writerow([t, amp])
+
     print("CSV generated")
 
 def png():
