@@ -42,7 +42,7 @@ def ultrasonic_recording():
     while True:
         try:
             'record distance from ultrasonic?'
-            'receieve transmission'
+            'receieve transmission while distance <=10'
             print("transmitting")
             time.sleep(1)
             'once distance >10 for specific amount of time generate all csv,png and wav'
