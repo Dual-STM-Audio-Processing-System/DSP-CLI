@@ -1,6 +1,6 @@
-import read_serial
+'import read_serial'
 import time
-
+import math
 def main():
     choice = -1
     print("Main Menu")
@@ -17,28 +17,37 @@ def main():
         except ValueError:
             print("Error: Only numbers are accepted")
     if choice == 1:
-        'Function to send UART2 signal to processing stm to be in manual recording and duration of recording'
         print("In manual recording mode") 
         manual_recording()
     elif choice == 2:
-        'Function to UART2 signal to processing stm to be in distance recording'
         print("In distance recording mode")
         ultrasonic_recording()
 
 def manual_recording():
+    data = 0
     record_duration = int(input("Recording Duration (s): "))
-    start_time = time.time
-    current_time = time.time
-    while (current_time-start_time)<record_duration:
-        current_time = time.time
+    start_time = time.time()
+    current_time = 0
+    recording_time = 0
+
+    while (recording_time<record_duration):
+        current_time = time.time()
+        recording_time = current_time-start_time
         'receive transmission'
+        print("receiving")
+        time.sleep(1)
     'once out of loop generate all csv,png and wav'
 
 def ultrasonic_recording():
     while True:
-        'record distance from ultrasonic?'
-        'receieve transmission'
-        'once distance >10 for specific amount of time generate all csv,png and wav'
+        try:
+            'record distance from ultrasonic?'
+            'receieve transmission'
+            print("transmitting")
+            time.sleep(1)
+            'once distance >10 for specific amount of time generate all csv,png and wav'
+        except KeyboardInterrupt:
+            main()
         
 def csv():
     'generate csv'
@@ -48,6 +57,6 @@ def png():
 
 def wav():
     'generate wav file'
-    
+
 if __name__ == '__main__':
     main()
