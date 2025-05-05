@@ -44,6 +44,7 @@ def main():
 
 def manual_recording():
     ser = serial.Serial(STM_device, baudrate=921600, bytesize=8, parity="N", stopbits=1)
+    ser.write("1".encode('utf-8'))
     with open("raw_ADC_values.data", "wb") as file:
         data = 0
         record_duration = int(input("Recording Duration (s): "))
@@ -60,11 +61,13 @@ def manual_recording():
         file.truncate(0)
         file.seek(0)
     print('\n')
+    ser.write("3".encode('utf-8'))
     ser.close
     main()
     
 def ultrasonic_recording():
     ser = serial.Serial(STM_device, baudrate=921600, bytesize=8, parity="N", stopbits=1,timeout = 0.5)
+    ser.write("2".encode('utf-8'))
     with open("raw_ADC_values.data", "wb") as file:
         while True:
             try:
@@ -82,8 +85,11 @@ def ultrasonic_recording():
                 else:
                     continue            
             except KeyboardInterrupt:
+                ser.write("3".encode('utf-8'))
                 ser.close
-                main()
+                print("Recording stopped")
+                break
+    main()
 
         
 def csv():
