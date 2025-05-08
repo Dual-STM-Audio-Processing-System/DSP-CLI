@@ -48,7 +48,7 @@ def manual_recording():
     with open("raw_ADC_values.data", "wb") as file:
         data = 0
         record_duration = int(input("Recording Duration (s): "))
-        byte_size = record_duration*SAMPLING_FREQUENCY*2 #calculte byte size        
+        byte_size = record_duration*SAMPLING_FREQUENCY*2 #calculate byte size        
         data = ser.read(byte_size)
         file.write(data)
         file.flush()
