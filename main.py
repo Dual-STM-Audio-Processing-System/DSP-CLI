@@ -1,13 +1,28 @@
 'import read_serial'
-import time
-import math
+import serial
+import serial.tools.list_ports
 import wave
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 import csv as csv_module  # Avoid naming conflict with csv()
 
+SAMPLING_FREQUENCY = 20000
+
+devices = serial.tools.list_ports.comports()
+STM_device = None
+for device in devices:
+    if "STMicroelectronics STLink Virtual COM Port" in device.description:
+        STM_device = device.device
+
+if STM_device is None:
+    raise Exception("STM32 device not found.")
+
+print(f"Connected to: {STM_device}")
+
 def main():
     choice = -1
+    
     print("Main Menu")
     print("-------------------------")
     print("1: Manual Recording Mode")
@@ -29,45 +44,54 @@ def main():
         ultrasonic_recording()
 
 def manual_recording():
-    data = 0
-    record_duration = int(input("Recording Duration (s): "))
-    start_time = time.time()
-    current_time = 0
-    recording_time = 0
-
-    while (recording_time<record_duration):
-        
-        'receive transmission'
-        print("receiving")
-        time.sleep(1)
-        current_time = time.time()
-        recording_time = current_time-start_time
-    'once out of loop generate all csv,png and wav'
+    ser = serial.Serial(STM_device, baudrate=921600, bytesize=8, parity="N", stopbits=1)
+    with open("raw_ADC_values.data", "wb") as file:
+        data = 0
+        record_duration = int(input("Recording Duration (s): "))
+        byte_size = record_duration*SAMPLING_FREQUENCY*2 #calculate byte size        
+        data = ser.read(byte_size)
+        file.write(data)
+        file.flush()
+    'once data written into file generate all csv,png and wav'
     wav()
     csv()
     png()
+    with open("raw_ADC_values.data", "wb") as file:
+        file.truncate(0)
+        file.seek(0)
     print('\n')
+    ser.close()
     main()
     
 def ultrasonic_recording():
-    while True:
-        try:
-            'record distance from ultrasonic?'
-            'receieve transmission while distance <=10'
-            print("transmitting")
-            time.sleep(1)
-            'once distance >10 for specific amount of time generate all csv,png and wav'
-        except KeyboardInterrupt:
-            print('')
-            wav()
-            csv()
-            png()
-            print('\n')
-            main()
+    recording_distance = int(input("Recording Distance (cm): "))
+    ser = serial.Serial(STM_device, baudrate=921600, bytesize=8, parity="N", stopbits=1, inter_byte_timeout=0.5)
+    ser.write(f"1U {recording_distance}".encode('utf-8'))
+    with open("raw_ADC_values.data", "wb") as file:
+        while True:
+            try:
+                data = ser.read_until(expected="\n", size=2000000)  # Read data in chunks of 1024 bytes
+                #until fully filled or encounter timeout
+                if data:
+                    file.write(data)
+                    file.flush()
+                    wav()
+                    csv()
+                    png()
+                    file.truncate(0)
+                    file.seek(0)
+                    
 
-        
+                else:
+                    continue            
+            except KeyboardInterrupt:
+                ser.write(f"2U".encode('utf-8'))
+                ser.close()
+                print("Recording stopped")
+                break
+    main()
+  
 def csv():
-    wav_file = 'test.wav'
     with wave.open(wav_file, 'rb') as wf:
         n_frames = wf.getnframes()
         framerate = wf.getframerate()
@@ -85,7 +109,7 @@ def csv():
 
         time_axis = np.linspace(0, len(data) / framerate, num=len(data))
 
-        with open('output.csv', 'w', newline='') as file:
+        with open('output' + time_date +'.csv', 'w', newline='') as file:
             writer = csv_module.writer(file)
             writer.writerow(['Time (s)', 'Amplitude'])
             for t, amp in zip(time_axis, data):
@@ -94,7 +118,6 @@ def csv():
     print("CSV generated")
 
 def png():
-    wav_file = 'test.wav'
     with wave.open(wav_file, 'rb') as wf:
         n_frames = wf.getnframes()
         framerate = wf.getframerate()
@@ -118,13 +141,20 @@ def png():
         plt.xlabel('Time (s)')
         plt.ylabel('Amplitude')
         plt.tight_layout()
-        plt.savefig('waveform.png')
+        plt.savefig('waveform' + time_date + '.png', dpi=300)
         plt.close()
 
     print("PNG generated")
 
 def wav():
     'generate wav file'
+    global wav_file # wav_file, made global to use in csv and png file name
+    global time_date # time and date at recording, made global to use in wav, csv and png file name
+
+    time_date = time.strftime("%Y-%m-%d %I-%M-%S-%p")
+    wav_file = "test audio at " + time_date +".wav"
+    print (wav_file)
+
     print("WAV generated")
 
 if __name__ == '__main__':
