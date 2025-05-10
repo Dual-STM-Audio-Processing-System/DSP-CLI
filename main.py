@@ -23,27 +23,28 @@ if STM_device is None:
 print(f"Connected to: {STM_device}")
 
 def main():
-    choice = -1
-
-    print("Main Menu")
-    print("-------------------------")
-    print("1: Manual Recording Mode")
-    print("2: Distance Recording Mode")
     while True:
+        choice = -1
+        print("Main Menu")
+        print("-------------------------")
+        print("1: Manual Recording Mode")
+        print("2: Distance Recording Mode")
+        print("3: Exit")
         try:
             choice = int(input("Option: "))
-            if choice == 1 or choice == 2:
+            if choice == 1:
+                print("In manual recording mode")
+                manual_recording()
+            elif choice == 2:
+                print("In distance recording mode")
+                ultrasonic_recording()
+            elif choice == 3:
                 break
             else:
                 print("Error invalid option")
         except ValueError:
             print("Error: Only numbers are accepted")
-    if choice == 1:
-        print("In manual recording mode")
-        manual_recording()
-    elif choice == 2:
-        print("In distance recording mode")
-        ultrasonic_recording()
+
 
 def manual_recording():
     ser = serial.Serial(STM_device, baudrate=921600, bytesize=8, parity="N", stopbits=1)
@@ -63,8 +64,7 @@ def manual_recording():
         file.seek(0)
     print('\n')
     ser.close()
-    main()
-
+    return
 def ultrasonic_recording():
     recording_distance = int(input("Recording Distance (cm): "))
     ser = serial.Serial(STM_device, baudrate=921600, bytesize=8, parity="N", stopbits=1, inter_byte_timeout=0.5)
@@ -81,21 +81,21 @@ def ultrasonic_recording():
                     if ret != 0:
                         ser.write(f"2U".encode('utf-8'))
                         ser.close()
-                        main();
+                        return
                     csv()
                     png()
                     file.truncate(0)
                     file.seek(0)
+                    
 
                 else:
-                    continue
+                    continue            
             except KeyboardInterrupt:
                 ser.write(f"2U".encode('utf-8'))
                 ser.close()
                 print("Recording stopped")
                 break
-    main()
-
+    return
 def csv():
     with wave.open(wav_file, 'rb') as wf:
         n_frames = wf.getnframes()
@@ -155,7 +155,7 @@ def wav():
     global time_date # time and date at recording, made global to use in wav, csv and png file name
 
     time_date = time.strftime("%Y-%m-%d %I-%M-%S-%p")
-    wav_file =time_date +".wav"
+    wav_file = time_date +".wav"
 
     result = subprocess.run(["WavFileConverter.exe", "raw_ADC_values.data", wav_file, str(SAMPLING_FREQUENCY), str(BITS_PER_SAMPLE), str(GAIN)], capture_output=True, text=True)
     if result.returncode != 0:
