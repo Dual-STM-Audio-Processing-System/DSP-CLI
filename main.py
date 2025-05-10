@@ -31,17 +31,17 @@ def main():
         try:
             choice = int(input("Option: "))
             if choice == 1:
-                print("In manual recording mode") 
+                print("In manual recording mode\n") 
                 manual_recording()
             elif choice == 2:
-                print("In distance recording mode")
+                print("In distance recording mode\n")
                 ultrasonic_recording()
             elif choice == 3:
                 break
             else:
-                print("Error invalid option")
+                print("Error invalid option\n")
         except ValueError:
-            print("Error: Only numbers are accepted")
+            print("Error: Only numbers are accepted\n")
         
 
 def manual_recording():
@@ -49,7 +49,8 @@ def manual_recording():
     with open("raw_ADC_values.data", "wb") as file:
         data = 0
         record_duration = int(input("Recording Duration (s): "))
-        byte_size = record_duration*SAMPLING_FREQUENCY*2 #calculate byte size        
+        byte_size = record_duration*SAMPLING_FREQUENCY*2 #calculate byte size
+        print("Recording in progress\n")        
         data = ser.read(byte_size)
         file.write(data)
         file.flush()
@@ -60,7 +61,6 @@ def manual_recording():
     with open("raw_ADC_values.data", "wb") as file:
         file.truncate(0)
         file.seek(0)
-    print('\n')
     ser.close()
     return
     
@@ -70,6 +70,7 @@ def ultrasonic_recording():
     ser.write(f"1U {recording_distance}".encode('utf-8'))
     with open("raw_ADC_values.data", "wb") as file:
         while True:
+            print("Recording in progress\n")
             try:
                 data = ser.read_until(expected="\n", size=2000000)  # Read data in chunks of 1024 bytes
                 #until fully filled or encounter timeout
@@ -79,6 +80,7 @@ def ultrasonic_recording():
                     wav()
                     csv()
                     png()
+                    
                     file.truncate(0)
                     file.seek(0)
                     
@@ -90,6 +92,7 @@ def ultrasonic_recording():
                 ser.close()
                 print("Recording stopped")
                 break
+    print('\n')
     return
   
 def csv():
@@ -145,7 +148,7 @@ def png():
         plt.savefig('waveform' + time_date + '.png', dpi=300)
         plt.close()
 
-    print("PNG generated")
+    print("PNG generated\n")
 
 def wav():
     'generate wav file'
