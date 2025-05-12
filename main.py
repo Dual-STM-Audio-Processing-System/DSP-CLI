@@ -39,7 +39,7 @@ def main():
                 print("In distance recording mode\n")
                 ultrasonic_recording()
             elif choice == 3:
-                break
+                sys.exit(0)
             else:
                 print("Error invalid option\n")
         except ValueError:
