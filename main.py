@@ -142,7 +142,7 @@ def csv():
 
         time_axis = np.linspace(0, len(data) / framerate, num=len(data))
 
-        with open(folder_path + '/' + 'output ' + time_date + '.csv', 'w', newline='') as file:
+        with open(folder_path + '/' + 'CSV output at ' + time_date + ', Team 02, Sampling Frequency: ' + str(SAMPLING_FREQUENCY) + 'Hz' + '.csv', 'w', newline='') as file:
             writer = csv_module.writer(file)
             writer.writerow(['Time (s)', 'Amplitude'])
             for t, amp in zip(time_axis, data):
@@ -173,7 +173,7 @@ def png():
         plt.xlabel('Time (s)')
         plt.ylabel('Amplitude')
         plt.tight_layout()
-        plt.savefig(folder_path + "/" + 'waveform ' + time_date + '.png', dpi=300)
+        plt.savefig(folder_path + "/" + 'Amplitude vs Time Waveform at ' + time_date + ', Team 02, Sampling Frequency: ' + str(SAMPLING_FREQUENCY) + 'Hz' + '.png', dpi=300)
         plt.close()
 
     print("PNG generated\n")
@@ -183,8 +183,8 @@ def wav():
     global time_date # time and date at recording, made global to use in wav, csv and png file name
     global folder_path 
     time_date = time.strftime("%d-%m-%Y %I-%M-%S-%p")
-    wav_file = time_date +".wav"
-    folder_path = "Recording data at " + time_date 
+    wav_file = time_date + ", Team 02, Sampling Frequency: " + str(SAMPLING_FREQUENCY) + 'Hz' + ".wav"
+    folder_path = "Recording data at " + time_date
 
     try:
         os.mkdir(folder_path)
@@ -236,7 +236,7 @@ def dft():
         plt.xlabel('Frequency (Hz)')
         plt.ylabel('Magnitude')
         plt.tight_layout()
-        plt.savefig(folder_path + '/' + 'fft_' + time_date + '.png', dpi=300)
+        plt.savefig(folder_path + '/' + 'fft_' + time_date + ', Team 02, Sampling Frequency: ' + str(SAMPLING_FREQUENCY) + 'Hz' + '.png', dpi=300)
         plt.close()
 
     print("DFT PNG generated\n")
