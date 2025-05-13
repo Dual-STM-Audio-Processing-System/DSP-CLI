@@ -13,7 +13,7 @@ from scipy.fft import fft, fftfreq
 SAMPLING_FREQUENCY = 20000
 BITS_PER_SAMPLE = 8
 GAIN = 2
-BYTES_PER_SAMPLE = BITS_PER_SAMPLE/8
+BYTES_PER_SAMPLE = 1
 
 devices = serial.tools.list_ports.comports()
 STM_device = None
@@ -56,11 +56,17 @@ def manual_recording():
         record_duration = int(input("Recording Duration (s): "))
         byte_size = record_duration*SAMPLING_FREQUENCY*BYTES_PER_SAMPLE #calculate byte size
         print("Recording in progress\n")
-        data = ser.read(int(byte_size))
+        data = ser.read(byte_size)
         file.write(data)
+        print(f"Bytes written: {len(data)}")
         file.flush()
     #once data written into file generate wav file, then let user decide other output formats
-    wav()
+    ret = wav()
+    if ret != 0:
+        ser.write(f"2U".encode('utf-8'))
+        ser.close()
+        print("Something went wrong lol")
+        return
     generate_artefacts()
     with open("raw_ADC_values.data", "wb") as file:
         file.truncate(0)
@@ -125,7 +131,7 @@ def generate_artefacts():
             print("Error: Only numbers are accepted\n")
 
 def csv():
-    with wave.open(folder_path + "/" + wav_file, 'rb') as wf:
+    with wave.open(folder_path + "\\" + wav_file, 'rb') as wf:
         n_frames = wf.getnframes()
         framerate = wf.getframerate()
         signal = wf.readframes(n_frames)
@@ -142,7 +148,7 @@ def csv():
 
         time_axis = np.linspace(0, len(data) / framerate, num=len(data))
 
-        with open(folder_path + '/' + 'CSV output at ' + time_date + ', Team 02, Sampling Frequency: ' + str(SAMPLING_FREQUENCY) + 'Hz' + '.csv', 'w', newline='') as file:
+        with open(folder_path + '\\' + 'CSV output at ' + time_date + ', Team 02, Sampling Frequency: ' + str(SAMPLING_FREQUENCY) + 'Hz' + '.csv', 'w', newline='') as file:
             writer = csv_module.writer(file)
             writer.writerow(['Time (s)', 'Amplitude'])
             for t, amp in zip(time_axis, data):
@@ -151,7 +157,7 @@ def csv():
     print("CSV generated\n")
 
 def png():
-    with wave.open(folder_path + "/" + wav_file, 'rb') as wf:
+    with wave.open(folder_path + "\\" + wav_file, 'rb') as wf:
         n_frames = wf.getnframes()
         framerate = wf.getframerate()
         signal = wf.readframes(n_frames)
@@ -173,7 +179,7 @@ def png():
         plt.xlabel('Time (s)')
         plt.ylabel('Amplitude')
         plt.tight_layout()
-        plt.savefig(folder_path + "/" + 'Amplitude vs Time Waveform at ' + time_date + ', Team 02, Sampling Frequency: ' + str(SAMPLING_FREQUENCY) + 'Hz' + '.png', dpi=300)
+        plt.savefig(folder_path + "\\" + 'Amplitude vs Time Waveform at ' + time_date + ', Team 02, Sampling Frequency: ' + str(SAMPLING_FREQUENCY) + 'Hz' + '.png', dpi=300)
         plt.close()
 
     print("PNG generated\n")
@@ -196,7 +202,7 @@ def wav():
     except FileNotFoundError:
         print(f"Parent directory not found for '{folder_path}'.")
     
-    result = subprocess.run(["WavFileConverter.exe", "raw_ADC_values.data", folder_path + "/" + wav_file, str(SAMPLING_FREQUENCY), str(BITS_PER_SAMPLE), str(GAIN)], capture_output=True, text=True)
+    result = subprocess.run(["WavFileConverter.exe", "raw_ADC_values.data", folder_path + "\\" + wav_file, str(SAMPLING_FREQUENCY), str(BITS_PER_SAMPLE), str(GAIN)], capture_output=True, text=True)
     if result.returncode != 0:
         print("Error: WavFileConverter.exe failed to run successfully.")
         return 1
@@ -205,7 +211,7 @@ def wav():
     return 0
 
 def dft():
-    with wave.open(folder_path + "/" + wav_file, 'rb') as wf:
+    with wave.open(folder_path + "\\" + wav_file, 'rb') as wf:
         n_frames = wf.getnframes()
         framerate = wf.getframerate()
         signal = wf.readframes(n_frames)
@@ -236,7 +242,7 @@ def dft():
         plt.xlabel('Frequency (Hz)')
         plt.ylabel('Magnitude')
         plt.tight_layout()
-        plt.savefig(folder_path + '/' + 'fft_' + time_date + ', Team 02, Sampling Frequency: ' + str(SAMPLING_FREQUENCY) + 'Hz' + '.png', dpi=300)
+        plt.savefig(folder_path + '\\' + 'fft_' + time_date + ', Team 02, Sampling Frequency: ' + str(SAMPLING_FREQUENCY) + 'Hz' + '.png', dpi=300)
         plt.close()
 
     print("DFT PNG generated\n")
