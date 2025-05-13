@@ -106,7 +106,7 @@ def generate_artefacts():
         print("-------------------------")
         print("1: CSV Generation")
         print("2: PNG Generation")
-        print("3: DFT Geneartion")
+        print("3: DFT Generation")
         print("4: Exit")
         try:
             choice = int(input("Option: "))
