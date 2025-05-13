@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import csv as csv_module  # Avoid naming conflict with csv()
 import subprocess
+import os
 from scipy.fft import fft, fftfreq
 
 SAMPLING_FREQUENCY = 20000
@@ -69,7 +70,7 @@ def manual_recording():
 
 def ultrasonic_recording():
     recording_distance = int(input("Recording Distance (cm): "))
-    ser = serial.Serial(STM_device, baudrate=921600, bytesize=8, parity="N", stopbits=1, inter_byte_timeout=0.5)
+    ser = serial.Serial(STM_device, baudrate=921600, bytesize=8, parity="N", stopbits=1, inter_byte_timeout=0.5) #timeout after 500ms of not receiving data
     ser.write(f"1U {recording_distance}".encode('utf-8'))
     with open("raw_ADC_values.data", "wb") as file:
         while True:
@@ -123,7 +124,7 @@ def generate_artefacts():
             print("Error: Only numbers are accepted\n")
 
 def csv():
-    with wave.open(wav_file, 'rb') as wf:
+    with wave.open(folder_path + "/" + wav_file, 'rb') as wf:
         n_frames = wf.getnframes()
         framerate = wf.getframerate()
         signal = wf.readframes(n_frames)
@@ -145,12 +146,11 @@ def csv():
             writer.writerow(['Time (s)', 'Amplitude'])
             for t, amp in zip(time_axis, data):
                 writer.writerow([t, amp])
-    flag = 1
 
     print("CSV generated")
 
 def png():
-    with wave.open(wav_file, 'rb') as wf:
+    with wave.open(folder_path + "/" + wav_file, 'rb') as wf:
         n_frames = wf.getnframes()
         framerate = wf.getframerate()
         signal = wf.readframes(n_frames)
@@ -184,7 +184,17 @@ def wav():
     time_date = time.strftime("%Y-%m-%d %I-%M-%S-%p")
     wav_file = time_date +".wav"
 
-    result = subprocess.run(["WavFileConverter.exe", "raw_ADC_values.data", wav_file, str(SAMPLING_FREQUENCY), str(BITS_PER_SAMPLE), str(GAIN)], capture_output=True, text=True)
+    global folder_path 
+    folder_path = time_date 
+    try:
+        os.mkdir(folder_path)
+        print(f"Folder '{folder_path}' created successfully.")
+    except FileExistsError:
+        print(f"Folder '{folder_path}' already exists.")
+    except FileNotFoundError:
+        print(f"Parent directory not found for '{folder_path}'.")
+    
+    result = subprocess.run(["WavFileConverter.exe", "raw_ADC_values.data", folder_path + "/" + wav_file, str(SAMPLING_FREQUENCY), str(BITS_PER_SAMPLE), str(GAIN)], capture_output=True, text=True)
     if result.returncode != 0:
         print("Error: WavFileConverter.exe failed to run successfully.")
         return 1
