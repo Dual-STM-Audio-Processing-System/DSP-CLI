@@ -56,7 +56,7 @@ def manual_recording():
         record_duration = int(input("Recording Duration (s): "))
         byte_size = record_duration*SAMPLING_FREQUENCY*BYTES_PER_SAMPLE #calculate byte size
         print("Recording in progress\n")
-        data = ser.read(byte_size)
+        data = ser.read(int(byte_size))
         file.write(data)
         file.flush()
     #once data written into file generate wav file, then let user decide other output formats
@@ -117,6 +117,7 @@ def generate_artefacts():
             elif choice == 3:
                 dft()
             elif choice == 4:
+                print()
                 return
             else:
                 print("Error invalid option\n")
@@ -141,13 +142,13 @@ def csv():
 
         time_axis = np.linspace(0, len(data) / framerate, num=len(data))
 
-        with open('output' + time_date +'.csv', 'w', newline='') as file:
+        with open(folder_path + '/' + 'output ' + time_date + '.csv', 'w', newline='') as file:
             writer = csv_module.writer(file)
             writer.writerow(['Time (s)', 'Amplitude'])
             for t, amp in zip(time_axis, data):
                 writer.writerow([t, amp])
 
-    print("CSV generated")
+    print("CSV generated\n")
 
 def png():
     with wave.open(folder_path + "/" + wav_file, 'rb') as wf:
@@ -172,7 +173,7 @@ def png():
         plt.xlabel('Time (s)')
         plt.ylabel('Amplitude')
         plt.tight_layout()
-        plt.savefig('waveform' + time_date + '.png', dpi=300)
+        plt.savefig(folder_path + "/" + 'waveform ' + time_date + '.png', dpi=300)
         plt.close()
 
     print("PNG generated\n")
@@ -181,16 +182,17 @@ def wav():
     global wav_file # wav_file, made global to use in csv and png file name
     global time_date # time and date at recording, made global to use in wav, csv and png file name
     global folder_path 
-
-    time_date = time.strftime("%Y-%m-%d %I-%M-%S-%p")
+    time_date = time.strftime("%d-%m-%Y %I-%M-%S-%p")
     wav_file = time_date +".wav"
-    folder_path = "Recording data at" + time_date 
+    folder_path = "Recording data at " + time_date 
 
     try:
         os.mkdir(folder_path)
         print(f"Folder '{folder_path}' created successfully.")
+
     except FileExistsError:
         print(f"Folder '{folder_path}' already exists.")
+
     except FileNotFoundError:
         print(f"Parent directory not found for '{folder_path}'.")
     
@@ -199,7 +201,7 @@ def wav():
         print("Error: WavFileConverter.exe failed to run successfully.")
         return 1
 
-    print("WAV generated")
+    print("WAV generated\n")
     return 0
 
 def dft():
@@ -234,7 +236,7 @@ def dft():
         plt.xlabel('Frequency (Hz)')
         plt.ylabel('Magnitude')
         plt.tight_layout()
-        plt.savefig('fft_' + time_date + '.png', dpi=300)
+        plt.savefig(folder_path + '/' + 'fft_' + time_date + '.png', dpi=300)
         plt.close()
 
     print("DFT PNG generated\n")
