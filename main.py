@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import csv as csv_module  # Avoid naming conflict with csv()
 import subprocess
+from scipy.fft import fft, fftfreq
 
 SAMPLING_FREQUENCY = 20000
 BITS_PER_SAMPLE = 8
@@ -60,6 +61,7 @@ def manual_recording():
     wav()
     csv()
     png()
+    dft()
     with open("raw_ADC_values.data", "wb") as file:
         file.truncate(0)
         file.seek(0)
@@ -85,10 +87,9 @@ def ultrasonic_recording():
                         return
                     csv()
                     png()
+                    dft()
                     file.truncate(0)
                     file.seek(0)
-                    
-
                 else:
                     continue            
             except KeyboardInterrupt:
@@ -166,6 +167,42 @@ def wav():
 
     print("WAV generated")
     return 0
+def dft():
+    with wave.open(wav_file, 'rb') as wf:
+        n_frames = wf.getnframes()
+        framerate = wf.getframerate()
+        signal = wf.readframes(n_frames)
+        sample_width = wf.getsampwidth()
+
+        if sample_width == 2:
+            data = np.frombuffer(signal, dtype=np.int16)
+        elif sample_width == 1:
+            raw = np.frombuffer(signal, dtype=np.uint8)
+            data = raw.astype(np.int16) - 128  # Center around 0
+        else:
+            raise ValueError("Unsupported sample width")
+
+        # Perform FFT
+        N = len(data)
+        yf = fft(data)
+        xf = fftfreq(N, 1 / framerate)
+
+        # Only plot the positive half of the spectrum
+        idx = np.where(xf >= 0)
+        xf = xf[idx]
+        yf = np.abs(yf[idx])
+
+        # Plot FFT
+        plt.figure(figsize=(10, 4))
+        plt.plot(xf, yf)
+        plt.title('FFT Spectrum')
+        plt.xlabel('Frequency (Hz)')
+        plt.ylabel('Magnitude')
+        plt.tight_layout()
+        plt.savefig('fft_' + time_date + '.png', dpi=300)
+        plt.close()
+
+    print("DFT PNG generated\n")
 
 if __name__ == '__main__':
     main()
