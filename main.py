@@ -180,12 +180,12 @@ def png():
 def wav():
     global wav_file # wav_file, made global to use in csv and png file name
     global time_date # time and date at recording, made global to use in wav, csv and png file name
+    global folder_path 
 
     time_date = time.strftime("%Y-%m-%d %I-%M-%S-%p")
     wav_file = time_date +".wav"
+    folder_path = "Recording data at" + time_date 
 
-    global folder_path 
-    folder_path = time_date 
     try:
         os.mkdir(folder_path)
         print(f"Folder '{folder_path}' created successfully.")
@@ -203,7 +203,7 @@ def wav():
     return 0
 
 def dft():
-    with wave.open(wav_file, 'rb') as wf:
+    with wave.open(folder_path + "/" + wav_file, 'rb') as wf:
         n_frames = wf.getnframes()
         framerate = wf.getframerate()
         signal = wf.readframes(n_frames)
