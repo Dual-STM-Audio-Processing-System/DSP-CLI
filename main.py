@@ -12,6 +12,7 @@ from scipy.fft import fft, fftfreq
 SAMPLING_FREQUENCY = 20000
 BITS_PER_SAMPLE = 8
 GAIN = 2
+BYTES_PER_SAMPLE = BITS_PER_SAMPLE/8
 
 devices = serial.tools.list_ports.comports()
 STM_device = None
@@ -52,21 +53,20 @@ def manual_recording():
     with open("raw_ADC_values.data", "wb") as file:
         data = 0
         record_duration = int(input("Recording Duration (s): "))
-        byte_size = record_duration*SAMPLING_FREQUENCY*1 #calculate byte size
+        byte_size = record_duration*SAMPLING_FREQUENCY*BYTES_PER_SAMPLE #calculate byte size
         print("Recording in progress\n")
         data = ser.read(byte_size)
         file.write(data)
         file.flush()
-    'once data written into file generate all csv,png and wav'
+    #once data written into file generate wav file, then let user decide other output formats
     wav()
-    csv()
-    png()
-    dft()
+    generate_artefacts()
     with open("raw_ADC_values.data", "wb") as file:
         file.truncate(0)
         file.seek(0)
     ser.close()
     return
+
 def ultrasonic_recording():
     recording_distance = int(input("Recording Distance (cm): "))
     ser = serial.Serial(STM_device, baudrate=921600, bytesize=8, parity="N", stopbits=1, inter_byte_timeout=0.5)
@@ -85,9 +85,7 @@ def ultrasonic_recording():
                         ser.write(f"2U".encode('utf-8'))
                         ser.close()
                         return
-                    csv()
-                    png()
-                    dft()
+                    generate_artefacts()
                     file.truncate(0)
                     file.seek(0)
                 else:
@@ -99,6 +97,31 @@ def ultrasonic_recording():
                 break
     print('\n')
     return
+
+def generate_artefacts():
+    while True:
+        choice = -1
+        print("Artefact Generation Menu")
+        print("-------------------------")
+        print("1: CSV Generation")
+        print("2: PNG Generation")
+        print("3: DFT Geneartion")
+        print("4: Exit")
+        try:
+            choice = int(input("Option: "))
+            if choice == 1:
+                csv()
+            elif choice == 2:
+                png()
+            elif choice == 3:
+                dft()
+            elif choice == 4:
+                return
+            else:
+                print("Error invalid option\n")
+        except ValueError:
+            print("Error: Only numbers are accepted\n")
+
 def csv():
     with wave.open(wav_file, 'rb') as wf:
         n_frames = wf.getnframes()
@@ -122,6 +145,7 @@ def csv():
             writer.writerow(['Time (s)', 'Amplitude'])
             for t, amp in zip(time_axis, data):
                 writer.writerow([t, amp])
+    flag = 1
 
     print("CSV generated")
 
@@ -167,6 +191,7 @@ def wav():
 
     print("WAV generated")
     return 0
+
 def dft():
     with wave.open(wav_file, 'rb') as wf:
         n_frames = wf.getnframes()
