@@ -7,11 +7,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import csv as csv_module  # Avoid naming conflict with csv()
 import subprocess
+import os
 from scipy.fft import fft, fftfreq
 
 SAMPLING_FREQUENCY = 20000
 BITS_PER_SAMPLE = 8
 GAIN = 2
+BYTES_PER_SAMPLE = 1
 
 devices = serial.tools.list_ports.comports()
 STM_device = None
@@ -52,24 +54,29 @@ def manual_recording():
     with open("raw_ADC_values.data", "wb") as file:
         data = 0
         record_duration = int(input("Recording Duration (s): "))
-        byte_size = record_duration*SAMPLING_FREQUENCY*1 #calculate byte size
+        byte_size = record_duration*SAMPLING_FREQUENCY*BYTES_PER_SAMPLE #calculate byte size
         print("Recording in progress\n")
         data = ser.read(byte_size)
         file.write(data)
+        print(f"Bytes written: {len(data)}")
         file.flush()
-    'once data written into file generate all csv,png and wav'
-    wav()
-    csv()
-    png()
-    dft()
+    #once data written into file generate wav file, then let user decide other output formats
+    ret = wav()
+    if ret != 0:
+        ser.write(f"2U".encode('utf-8'))
+        ser.close()
+        print("Something went wrong lol")
+        return
+    generate_artefacts()
     with open("raw_ADC_values.data", "wb") as file:
         file.truncate(0)
         file.seek(0)
     ser.close()
     return
+
 def ultrasonic_recording():
     recording_distance = int(input("Recording Distance (cm): "))
-    ser = serial.Serial(STM_device, baudrate=921600, bytesize=8, parity="N", stopbits=1, inter_byte_timeout=0.5)
+    ser = serial.Serial(STM_device, baudrate=921600, bytesize=8, parity="N", stopbits=1, inter_byte_timeout=0.5) #timeout after 500ms of not receiving data
     ser.write(f"1U {recording_distance}".encode('utf-8'))
     with open("raw_ADC_values.data", "wb") as file:
         while True:
@@ -85,9 +92,7 @@ def ultrasonic_recording():
                         ser.write(f"2U".encode('utf-8'))
                         ser.close()
                         return
-                    csv()
-                    png()
-                    dft()
+                    generate_artefacts()
                     file.truncate(0)
                     file.seek(0)
                 else:
@@ -99,8 +104,34 @@ def ultrasonic_recording():
                 break
     print('\n')
     return
+
+def generate_artefacts():
+    while True:
+        choice = -1
+        print("Artefact Generation Menu")
+        print("-------------------------")
+        print("1: CSV Generation")
+        print("2: PNG Generation")
+        print("3: DFT Generation")
+        print("4: Exit")
+        try:
+            choice = int(input("Option: "))
+            if choice == 1:
+                csv()
+            elif choice == 2:
+                png()
+            elif choice == 3:
+                dft()
+            elif choice == 4:
+                print()
+                return
+            else:
+                print("Error invalid option\n")
+        except ValueError:
+            print("Error: Only numbers are accepted\n")
+
 def csv():
-    with wave.open(wav_file, 'rb') as wf:
+    with wave.open(folder_path + "\\" + wav_file, 'rb') as wf:
         n_frames = wf.getnframes()
         framerate = wf.getframerate()
         signal = wf.readframes(n_frames)
@@ -117,16 +148,16 @@ def csv():
 
         time_axis = np.linspace(0, len(data) / framerate, num=len(data))
 
-        with open('output' + time_date +'.csv', 'w', newline='') as file:
+        with open(folder_path + '\\' + 'CSV output at ' + time_date + ', Team 02, Sampling Frequency: ' + str(SAMPLING_FREQUENCY) + 'Hz' + '.csv', 'w', newline='') as file:
             writer = csv_module.writer(file)
             writer.writerow(['Time (s)', 'Amplitude'])
             for t, amp in zip(time_axis, data):
                 writer.writerow([t, amp])
 
-    print("CSV generated")
+    print("CSV generated\n")
 
 def png():
-    with wave.open(wav_file, 'rb') as wf:
+    with wave.open(folder_path + "\\" + wav_file, 'rb') as wf:
         n_frames = wf.getnframes()
         framerate = wf.getframerate()
         signal = wf.readframes(n_frames)
@@ -148,7 +179,7 @@ def png():
         plt.xlabel('Time (s)')
         plt.ylabel('Amplitude')
         plt.tight_layout()
-        plt.savefig('waveform' + time_date + '.png', dpi=300)
+        plt.savefig(folder_path + "\\" + 'Amplitude vs Time Waveform at ' + time_date + ', Team 02, Sampling Frequency: ' + str(SAMPLING_FREQUENCY) + 'Hz' + '.png', dpi=300)
         plt.close()
 
     print("PNG generated\n")
@@ -156,19 +187,31 @@ def png():
 def wav():
     global wav_file # wav_file, made global to use in csv and png file name
     global time_date # time and date at recording, made global to use in wav, csv and png file name
+    global folder_path 
+    time_date = time.strftime("%d-%m-%Y %I-%M-%S-%p")
+    wav_file = time_date + ", Team 02, Sampling Frequency: " + str(SAMPLING_FREQUENCY) + 'Hz' + ".wav"
+    folder_path = "Recording data at " + time_date
 
-    time_date = time.strftime("%Y-%m-%d %I-%M-%S-%p")
-    wav_file = time_date +".wav"
+    try:
+        os.mkdir(folder_path)
+        print(f"Folder '{folder_path}' created successfully.")
 
-    result = subprocess.run(["WavFileConverter.exe", "raw_ADC_values.data", wav_file, str(SAMPLING_FREQUENCY), str(BITS_PER_SAMPLE), str(GAIN)], capture_output=True, text=True)
+    except FileExistsError:
+        print(f"Folder '{folder_path}' already exists.")
+
+    except FileNotFoundError:
+        print(f"Parent directory not found for '{folder_path}'.")
+    
+    result = subprocess.run(["WavFileConverter.exe", "raw_ADC_values.data", folder_path + "\\" + wav_file, str(SAMPLING_FREQUENCY), str(BITS_PER_SAMPLE), str(GAIN)], capture_output=True, text=True)
     if result.returncode != 0:
         print("Error: WavFileConverter.exe failed to run successfully.")
         return 1
 
-    print("WAV generated")
+    print("WAV generated\n")
     return 0
+
 def dft():
-    with wave.open(wav_file, 'rb') as wf:
+    with wave.open(folder_path + "\\" + wav_file, 'rb') as wf:
         n_frames = wf.getnframes()
         framerate = wf.getframerate()
         signal = wf.readframes(n_frames)
@@ -199,7 +242,7 @@ def dft():
         plt.xlabel('Frequency (Hz)')
         plt.ylabel('Magnitude')
         plt.tight_layout()
-        plt.savefig('fft_' + time_date + '.png', dpi=300)
+        plt.savefig(folder_path + '\\' + 'fft_' + time_date + ', Team 02, Sampling Frequency: ' + str(SAMPLING_FREQUENCY) + 'Hz' + '.png', dpi=300)
         plt.close()
 
     print("DFT PNG generated\n")
