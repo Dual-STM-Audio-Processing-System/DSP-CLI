@@ -18,7 +18,7 @@ BYTES_PER_SAMPLE = 1
 devices = serial.tools.list_ports.comports()
 STM_device = None
 for device in devices:
-    if "STMicroelectronics STLink Virtual COM Port (COM6)" in device.description:
+    if "STMicroelectronics STLink Virtual COM Port (COM16)" in device.description:
         STM_device = device.device
 
 if STM_device is None:
@@ -61,13 +61,23 @@ def manual_recording():
         print(f"Bytes written: {len(data)}")
         file.flush()
     #once data written into file generate wav file, then let user decide other output formats
-    ret = wav()
-    if ret != 0:
-        ser.write(f"2U".encode('utf-8'))
-        ser.close()
-        print("Something went wrong lol")
-        return
-    generate_artefacts()
+    while True:
+        generate_choice = str(input("Would you like to generate the wav file? (Y/N): "))
+        if generate_choice == "Y" or generate_choice == "y":
+            ret = wav()
+            if ret != 0:
+                ser.write(f"2U".encode('utf-8'))
+                ser.close()
+                print("Something went wrong lol")
+                return
+            generate_artefacts()
+            break
+        if generate_choice == "N" or generate_choice == "n":
+            print("Exiting without generating wav file")
+            break
+        else:
+            print("Error: Invalid input, please enter Y or N\n")
+    #clear the file after generating wav file and artefacts
     with open("raw_ADC_values.data", "wb") as file:
         file.truncate(0)
         file.seek(0)
@@ -87,12 +97,24 @@ def ultrasonic_recording():
                 if data:
                     file.write(data)
                     file.flush()
-                    ret = wav()
-                    if ret != 0:
-                        ser.write(f"2U".encode('utf-8'))
-                        ser.close()
-                        return
-                    generate_artefacts()
+                    #present user with options to generate wav file and other artefacts
+                    while True:
+                        generate_choice = str(input("Would you like to generate the wav file? (Y/N): "))
+                        if generate_choice == "Y" or generate_choice == "y":
+                            ret = wav()
+                            if ret != 0:
+                                ser.write(f"2U".encode('utf-8'))
+                                ser.close()
+                                print("Something went wrong lol")
+                                return
+                            generate_artefacts()
+                            break
+                        if generate_choice == "N" or generate_choice == "n":
+                            print("Exiting without generating wav file")
+                            break
+                        else:
+                            print("Error: Invalid input, please enter Y or N\n") #stays in loop until valid input
+                    #clear the file for next recording and artefact generation
                     file.truncate(0)
                     file.seek(0)
                 else:
